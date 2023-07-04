@@ -1,105 +1,121 @@
-using System;
 using congestion.calculator;
-public class CongestionTaxCalculator
+using congestion.calculator.Domain;
+using System;
+using System.Linq;
+
+public partial class CongestionTaxCalculator
 {
-    /**
-         * Calculate the total toll fee for one day
-         *
-         * @param vehicle - the vehicle
-         * @param dates   - date and time of all passes on one day
-         * @return - the total congestion tax for that day
-         */
+    #region Fields & Properties
 
-    public int GetTax(Vehicle vehicle, DateTime[] dates)
+    //TODO: Remove this hardcoded rule from here
+    //      and push it into rule-set.
+    private const int JULY_EXEMPTION = 7;
+
+    //TODO: Remove this hardcoded rule from here
+    //      and push it into rule-set.
+    private const int SINGLE_CHARGE_RULE_MINUTES = 60;
+
+    //TODO: Remove this hardcoded rule from here
+    //      and push it into rule-set.
+    private const int MAX_CHARGE_RULE_PER_DAY_AMOUNT = 60;
+
+    private const int ONE_DAY_TIME_SPAN_MINUTES = 24 * 60;
+
+    #endregion
+
+
+    /// <summary>
+    ///Calculates the total toll fee for the given dates.
+    /// </summary>
+    /// <param name="vehicle"></param>
+    /// <param name="dates"></param>
+    /// <returns></returns>
+    public int GetTax(IVehicle vehicle, DateTime[] dates)
     {
-        DateTime intervalStart = dates[0];
-        int totalFee = 0;
-        foreach (DateTime date in dates)
-        {
-            int nextFee = GetTollFee(date, vehicle);
-            int tempFee = GetTollFee(intervalStart, vehicle);
+        //NOTE: Calculate all passes.
+        var calculatedDates = dates
+                .OrderBy(date => date)
+                .Select(date => (DateAndTime: date, Tax: GetTollFee(date, vehicle), Omitted: false));
 
-            long diffInMillies = date.Millisecond - intervalStart.Millisecond;
-            long minutes = diffInMillies / 1000 / 60;
+        //NOTE: Calculates total fee and omit the ones in the same range (single charge rule).
+        return calculatedDates
+            .GroupBy(date => date.DateAndTime.Date) //NOTE: Each day is calculated separately.
+            .Sum(dateGroupItem =>
+            {
+                return dateGroupItem.Sum(dateItem =>
+                {
+                    if (dateItem.Omitted)
+                        return 0;
 
-            if (minutes <= 60)
-            {
-                if (totalFee > 0) totalFee -= tempFee;
-                if (nextFee >= tempFee) tempFee = nextFee;
-                totalFee += tempFee;
-            }
-            else
-            {
-                totalFee += nextFee;
-            }
-        }
-        if (totalFee > 60) totalFee = 60;
-        return totalFee;
+                    var sameRangeDates = calculatedDates
+                            .Where(date => date.DateAndTime.Date == dateItem.DateAndTime.Date &&
+                                        !date.Omitted &&
+                                        DateFallsInTheRange(dateItem.DateAndTime, SINGLE_CHARGE_RULE_MINUTES, date.DateAndTime))
+                            .ToList();
+
+                    sameRangeDates.ForEach(dateItem => dateItem.Omitted = true);
+
+                    var maxTax = sameRangeDates.Max(item => item.Tax);
+                    return Math.Min(maxTax, MAX_CHARGE_RULE_PER_DAY_AMOUNT);
+                });
+            });
     }
 
-    private bool IsTollFreeVehicle(Vehicle vehicle)
+    private bool IsTollFreeVehicle(IVehicle vehicle)
     {
-        if (vehicle == null) return false;
+        if (vehicle == null)
+            return false;
+
         String vehicleType = vehicle.GetVehicleType();
-        return vehicleType.Equals(TollFreeVehicles.Motorcycle.ToString()) ||
-               vehicleType.Equals(TollFreeVehicles.Tractor.ToString()) ||
-               vehicleType.Equals(TollFreeVehicles.Emergency.ToString()) ||
-               vehicleType.Equals(TollFreeVehicles.Diplomat.ToString()) ||
-               vehicleType.Equals(TollFreeVehicles.Foreign.ToString()) ||
-               vehicleType.Equals(TollFreeVehicles.Military.ToString());
+        return Enum.TryParse(typeof(TollFreeVehicles), vehicleType, out _);
     }
 
-    public int GetTollFee(DateTime date, Vehicle vehicle)
+    //NOTE: Although it is better to define the return value as decimal (for currency),
+    //      however, I'm not gonna change it as it is a presumption of the code-challenge.
+    private int GetTollFee(DateTime date, IVehicle vehicle)
     {
-        if (IsTollFreeDate(date) || IsTollFreeVehicle(vehicle)) return 0;
+        if (IsTollFreeDate(date) || IsTollFreeVehicle(vehicle))
+            return 0;
 
-        int hour = date.Hour;
-        int minute = date.Minute;
+        //NOTE: Instead of hardcoding the time-spans, we make use of a
+        //      list of fixed objects (a.k.a., table like format).
+        //      Later on, we can easily change it into a parameterized fashion.
 
-        if (hour == 6 && minute >= 0 && minute <= 29) return 8;
-        else if (hour == 6 && minute >= 30 && minute <= 59) return 13;
-        else if (hour == 7 && minute >= 0 && minute <= 59) return 18;
-        else if (hour == 8 && minute >= 0 && minute <= 29) return 13;
-        else if (hour >= 8 && hour <= 14 && minute >= 30 && minute <= 59) return 8;
-        else if (hour == 15 && minute >= 0 && minute <= 29) return 13;
-        else if (hour == 15 && minute >= 0 || hour == 16 && minute <= 59) return 18;
-        else if (hour == 17 && minute >= 0 && minute <= 59) return 13;
-        else if (hour == 18 && minute >= 0 && minute <= 29) return 8;
-        else return 0;
+        return InMemoryDataProvider
+                    .GetTimeRules()
+                    .FirstOrDefault(item => date.TimeOfDay >= item.From && date.TimeOfDay <= item.To)
+                    ?.TaxCharge ?? 0;
     }
 
-    private Boolean IsTollFreeDate(DateTime date)
+    private bool IsTollFreeDate(DateTime date)
     {
-        int year = date.Year;
-        int month = date.Month;
-        int day = date.Day;
+        //NOTE: Instead of hardcoding the holidays and weekends, we make use of a
+        //      list of fixed objects (a.k.a., table like format).
+        //      Later on, we can easily change it into a parameterized fashion.
+        //      There are different weekends for some countries (e.g., Iran),
+        //      or different holidays for cities (e.g., Vancouver vs Toronto).
 
-        if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday) return true;
+        //IMPORTANT: It is crucial to understand that:
+        //      "July exemption" is not just a holiday but a rule.
+        //      Thus, we need to act it differently.
 
-        if (year == 2013)
-        {
-            if (month == 1 && day == 1 ||
-                month == 3 && (day == 28 || day == 29) ||
-                month == 4 && (day == 1 || day == 30) ||
-                month == 5 && (day == 1 || day == 8 || day == 9) ||
-                month == 6 && (day == 5 || day == 6 || day == 21) ||
-                month == 7 ||
-                month == 11 && day == 1 ||
-                month == 12 && (day == 24 || day == 25 || day == 26 || day == 31))
-            {
-                return true;
-            }
-        }
-        return false;
+        return
+            InMemoryDataProvider.GetWeekends().Any(item => item.DayOfWeek == date.DayOfWeek) ||
+            InMemoryDataProvider.GetHolidays().Any(item => IsInTheOneDayRange(item, date)) ||
+            date.Month == JULY_EXEMPTION;
     }
 
-    private enum TollFreeVehicles
+    private bool DateFallsInTheRange(DateTime seedDate, int minuteRange, DateTime date)
     {
-        Motorcycle = 0,
-        Tractor = 1,
-        Emergency = 2,
-        Diplomat = 3,
-        Foreign = 4,
-        Military = 5
+        return date >= seedDate.AddMinutes(-minuteRange) &&
+                date <= seedDate.AddMinutes(minuteRange);
+    }
+    private bool IsInTheOneDayRange(Holiday holiday, DateTime date)
+    {
+        //NOTE: As DateTime is a struct, they are meant to be ephemeral
+        //      and fast/easy to create and deallocate on the stack memory.
+        //      So we won't experience any performance degradation here.
+        var currentYearHoliday = new DateTime(DateTime.Now.Year, holiday.Month, holiday.DayOfMonth);
+        return DateFallsInTheRange(currentYearHoliday, ONE_DAY_TIME_SPAN_MINUTES, date);
     }
 }
