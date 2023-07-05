@@ -10,7 +10,7 @@ namespace congestion.calculator
     /// The rule sets and predefined stuff.
     /// Later on, we'll fetch actual data from database.
     /// </summary>
-    internal static class InMemoryDataProvider
+    public static class InMemoryDataProvider
     {
         #region Fields & Properties
 
@@ -25,8 +25,7 @@ namespace congestion.calculator
                 new TimeRule(new TimeSpan(15,0,0), new TimeSpan(15,29,59), 13),
                 new TimeRule(new TimeSpan(15,30,0), new TimeSpan(16,59,59), 18),
                 new TimeRule(new TimeSpan(17,0,0), new TimeSpan(17,59,59), 13),
-                new TimeRule(new TimeSpan(18,0,0), new TimeSpan(18,29,59), 8),
-                new TimeRule(new TimeSpan(18,30,0), new TimeSpan(5,59,59), 0) //NOTE: This rule could be omitted.
+                new TimeRule(new TimeSpan(18,0,0), new TimeSpan(18,29,59), 8)
             };
 
         private static IEnumerable<Weekend> weekends =
