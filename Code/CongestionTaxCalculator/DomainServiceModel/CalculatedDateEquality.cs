@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace congestion.calculator
+namespace congestion.calculator.DomainServiceModel
 {
-    internal class CalculateDateEquality : IEqualityComparer<CalculatedDate>
+    internal class CalculatedDateEquality : IEqualityComparer<CalculatedDate>
     {
         #region Fields & Properties
 
@@ -14,7 +14,7 @@ namespace congestion.calculator
 
         #region Constructor
 
-        public CalculateDateEquality(int equalRangeMinutes)
+        public CalculatedDateEquality(int equalRangeMinutes)
         {
             this.equalRangeMinutes = equalRangeMinutes;
         }

@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace congestion.calculator
+namespace congestion.calculator.Repository
 {
     /// <summary>
     /// This class is temporary "Repository pattern" and only there to mimic
@@ -34,7 +34,7 @@ namespace congestion.calculator
                 new Weekend(DayOfWeek.Saturday),
                 new Weekend(DayOfWeek.Sunday)
             };
-        
+
         private static IEnumerable<Holiday> holidays =
             new List<Holiday>
             {

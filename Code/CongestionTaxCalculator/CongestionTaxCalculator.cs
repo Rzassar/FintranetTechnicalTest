@@ -1,5 +1,7 @@
 using congestion.calculator;
 using congestion.calculator.Domain;
+using congestion.calculator.DomainServiceModel;
+using congestion.calculator.Repository;
 using System;
 using System.Linq;
 
@@ -54,7 +56,7 @@ namespace CongestionTaxCalculator
 
                                         return innerList.Max(item => item.Tax);
                                     },
-                                    new CalculateDateEquality(SINGLE_CHARGE_RULE_MINUTES))
+                                    new CalculatedDateEquality(SINGLE_CHARGE_RULE_MINUTES))
                         .Sum();
 
                         return Math.Min(dailyTax, MAX_CHARGE_RULE_PER_DAY_AMOUNT);

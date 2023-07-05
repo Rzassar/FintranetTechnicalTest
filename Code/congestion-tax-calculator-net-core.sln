@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33414.496
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "congestion-tax-calculator-net-core", "congestion-tax-calculator-net-core.csproj", "{6251A3BA-8550-4F8B-BFF7-E8D36F4F215E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "congestion-tax-calculator-net-core", "CongestionTaxCalculator\congestion-tax-calculator-net-core.csproj", "{6251A3BA-8550-4F8B-BFF7-E8D36F4F215E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CongestionTaxCalculator.Tests", "..\CongestionTaxCalculator.Tests\CongestionTaxCalculator.Tests.csproj", "{1D651474-7DA8-4B1D-B2AC-C8F8FC945A5C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CongestionTaxCalculator.Tests", "CongestionTaxCalculator.Tests\CongestionTaxCalculator.Tests.csproj", "{1D651474-7DA8-4B1D-B2AC-C8F8FC945A5C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

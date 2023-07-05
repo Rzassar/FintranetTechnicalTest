@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace congestion.calculator
+namespace congestion.calculator.DomainServiceModel
 {
     internal class CalculatedDate
     {

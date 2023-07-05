@@ -1,6 +1,6 @@
 using congestion.calculator;
+using congestion.calculator.Repository;
 using Moq;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CongestionTaxCalculator.Tests
 {
